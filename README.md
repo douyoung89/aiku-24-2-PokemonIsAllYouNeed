@@ -1,64 +1,111 @@
-# Pokemon is All You Need
+# Pokémon Is All You Need
 
-📢 2024년 2학기 [AIKU](https://github.com/AIKU-Official) 활동으로 진행한 프로젝트입니다
+A multimodal video-retrieval pipeline that extracts Pokémon animation highlights from a natural-language query by combining visual detection with semantic subtitle matching.
 
-## 소개
-![Introduction](./assets/Introduction.png)
-누구나 마음 속에 좋아하는 포켓몬 하나쯤은 있다고 생각합니다. 
+> This project was completed in Fall 2024 as part of [AIKU](https://github.com/AIKU-Official), an artificial intelligence student organization at Korea University.
 
-이제 귀찮게 하나하나 찾아다니지 말고, 자동으로 그 포켓몬이 나오는 장면만 뽑아봅시다. 
+![Project introduction](./assets/Introduction.png)
 
-포켓몬 하이라이트 추출 Task를 다루는 프로젝트입니다! 
+## Overview
 
-## 방법론
+Finding every scene that features a specific Pokémon or action requires manually searching through many episodes. This project automates that process.
 
-![Pipeline](./assets/Pipeline.png)
+Given a Korean-language query such as **"피카츄가 싸운다" ("Pikachu is fighting")**, the system:
 
-Input은 제시문으로 주어집니다.
+1. identifies the Pokémon mentioned in the query;
+2. retrieves frames containing that Pokémon through visual similarity;
+3. retrieves semantically relevant subtitle segments; and
+4. combines both signals to extract candidate highlight clips.
 
-과정은 두 트랙으로 구성됩니다. 
+## My Contributions
 
-### 이미지 임베딩
-1. 애니메이션의 모든 프레임에 대해서 Detection을 합니다.
-2. 각 Detection된 바운딩 박스의 이미지의 임베딩을 CLIP의 Image Encoder를 통해 구합니다.
-3. Input에서 포켓몬에 해당하는 단어를 찾아내고, 그 포켓몬 사진의 임베딩을 동일하게 CLIP의 Image Encoder를 통해 구합니다.
-4. 임베딩 간의 유사도를 Cosine Similarity를 통해 구하고, 특정 threshold를 넘으면 해당 포켓몬이 있는 프레임으로 판단합니다.
+**Douyoung Kwon ([douyoung89](https://github.com/douyoung89))**
 
-### 자막 정보 활용 (문장 임베딩)
-1. 제시문의 문장 임베딩을 Sentence Transformer를 통해 구합니다.
-2. 애니메이션의 모든 자막에 대해서 문장 임베딩을 Sentence Transformer를 통해 구합니다.
-3. 임베딩 간의 유사도를 Cosine Similarity를 통해 구하고, 특정 threshold를 넘으면 제시문에 해당하는 시간대인 것으로 판단합니다.
+- Contributed to the Pokémon detection pipeline used to identify candidate character regions.
+- Developed subtitle-based semantic retrieval using sentence embeddings and cosine similarity.
+- Participated in the design and implementation of the multimodal highlight-extraction workflow.
 
-### 병합
-이미지 임베딩으로 나온 프레임들의 시간대와 문장 임베딩으로 나온 자막의 시간대를 활용하여,
+## Method
 
-최종 하이라이트를 애니메이션에서 추출합니다.
+![Multimodal retrieval pipeline](./assets/Pipeline.png)
 
+The pipeline consists of two complementary retrieval tracks.
 
-## 환경 설정
+### 1. Visual Retrieval
 
-이미지 임베딩: [open_clip](https://github.com/mlfoundations/open_clip)
+1. Run object detection over animation frames to obtain candidate Pokémon bounding boxes.
+2. Encode each detected crop with the image encoder from [OpenCLIP](https://github.com/mlfoundations/open_clip).
+3. Parse the Pokémon name from the user query and encode reference images of that Pokémon with the same encoder.
+4. Calculate cosine similarity between the reference and frame embeddings.
+5. Retain frames whose similarity exceeds a configurable threshold.
 
-문장 임베딩: [sentence_transformers](https://sbert.net/)
+The current implementation uses the OpenCLIP **ViT-g/14** model pretrained on **LAION-2B**.
 
-두 라이브러리를 참고하여 구성
+### 2. Subtitle-Based Semantic Retrieval
 
-## 사용 방법
+1. Encode the user query with the Korean **KoE5** Sentence Transformer.
+2. Encode timestamped subtitle segments from the animation.
+3. Calculate cosine similarity between the query and subtitle embeddings.
+4. Select timestamps whose semantic similarity exceeds a configurable threshold.
 
-비교할 애니메이션 데이터가 여기에 없기 때문에 구동할 수는 없지만,
+Subtitle embeddings are cached to avoid recomputing them across queries.
 
-데이터가 존재하고 이미지 임베딩과 문장 임베딩을 미리 다 구해놓았다면 pipeline.ipynb에서 user_input에 제시문을 넣고 차례로 실행하면 됩니다.
+### 3. Multimodal Fusion and Clip Extraction
 
-## 예시 결과
-Input: **피카츄가 싸운다.**
+The system converts visually matched frames into candidate time intervals and cross-checks them against subtitle-derived timestamps. Intervals supported by both modalities are padded and extracted from the source video with OpenCV.
+
+This fusion helps narrow visual matches to scenes that also align with the action or context described by the user.
+
+## Example Results
+
+**Input:** "피카츄가 싸운다" ("Pikachu is fighting")
+
 <p>
-  <img src="./assets/result1.gif" alt="이미지1" width="200">
-  <img src="./assets/result2.gif" alt="이미지2" width="200">
-  <img src="./assets/result3.gif" alt="이미지3" width="200">
+  <img src="./assets/result1.gif" alt="Retrieved Pikachu highlight 1" width="200">
+  <img src="./assets/result2.gif" alt="Retrieved Pikachu highlight 2" width="200">
+  <img src="./assets/result3.gif" alt="Retrieved Pikachu highlight 3" width="200">
 </p>
 
-## 팀원
-- [이창엽](https://github.com/PROLCY): 팀장, 이미지 임베딩
-- [권도영](https://github.com/douyoung89): Pokemon Detection, 자막 정보 활용
-- [김민준](https://github.com/ddomjun): Pokemon  Detection, 자막 정보 활용
-- [박무근](https://github.com/MooGeunPark): 데이터셋 수집, 자막 정보 활용
+## Repository Contents
+
+| File | Description |
+| --- | --- |
+| `pipeline.ipynb` | End-to-end retrieval, fusion, and video-extraction workflow |
+| `extract_embedding.py` | OpenCLIP image-embedding utilities |
+| `transform_subtitles.py` | Timestamped subtitle preprocessing |
+| `assets/` | Architecture figures and qualitative result examples |
+
+## Environment
+
+The implementation is based on Python and the following libraries:
+
+- [PyTorch](https://pytorch.org/)
+- [OpenCLIP](https://github.com/mlfoundations/open_clip)
+- [Sentence Transformers](https://www.sbert.net/)
+- scikit-learn
+- OpenCV
+- Pillow
+- NumPy
+- Matplotlib
+
+A CUDA-capable GPU is recommended for image-embedding extraction.
+
+## Usage
+
+1. Prepare the animation videos, detected Pokémon crops, timestamped subtitles, Pokémon name mapping, and precomputed frame embeddings.
+2. Update the local data paths in `pipeline.ipynb` and `transform_subtitles.py`.
+3. Set `user_input` in `pipeline.ipynb` to a Korean-language description.
+4. Run the notebook cells in sequence to retrieve matching timestamps and export highlight clips.
+
+### Data Availability and Reproducibility
+
+The animation episodes and derived data are not distributed in this repository because of data and copyright constraints. Consequently, the notebook is not executable out of the box. The repository documents the research prototype and provides the core retrieval and processing code.
+
+## Team
+
+| Member | Role |
+| --- | --- |
+| [Changyeop Lee](https://github.com/PROLCY) | Team lead; image-embedding pipeline |
+| [Douyoung Kwon](https://github.com/douyoung89) | Pokémon detection; subtitle-based retrieval |
+| [Minjun Kim](https://github.com/ddomjun) | Pokémon detection; subtitle-based retrieval |
+| [Moo-geun Park](https://github.com/MooGeunPark) | Dataset collection; subtitle-based retrieval |
