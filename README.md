@@ -10,7 +10,7 @@ A multimodal video-retrieval pipeline that extracts Pokémon animation highlight
 
 Finding every scene that features a specific Pokémon or action requires manually searching through many episodes. This project automates that process.
 
-Given a Korean-language query such as **"피카츄가 싸운다" ("Pikachu is fighting")**, the system:
+Given a Korean-language query describing a scene such as **"Pikachu is fighting,"** the system:
 
 1. identifies the Pokémon mentioned in the query;
 2. retrieves frames containing that Pokémon through visual similarity;
@@ -58,7 +58,7 @@ This fusion helps narrow visual matches to scenes that also align with the actio
 
 ## Example Results
 
-**Input:** "피카츄가 싸운다" ("Pikachu is fighting")
+**Input:** "Pikachu is fighting"
 
 <p>
   <img src="./assets/result1.gif" alt="Retrieved Pikachu highlight 1" width="200">
